@@ -1,0 +1,14 @@
+description: Ultralytics train_with_bound_boxes model trained on /content/gdrive/MyDrive/dataset/data.yaml
+author: Ultralytics
+date: '2024-09-13T13:12:13.254954'
+version: 8.2.92
+license: AGPL-3.0 License (https://ultralytics.com/license)
+docs: https://docs.ultralytics.com
+stride: 32
+task: detect
+batch: 1
+imgsz:
+- 640
+- 640
+names:
+  0: seven-segment

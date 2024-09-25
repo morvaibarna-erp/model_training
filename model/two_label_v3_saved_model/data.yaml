@@ -1,0 +1,13 @@
+train: ../train/images
+val: ../valid/images
+test: ../test/images
+
+nc: 2
+names: ['digit', 'segment']
+
+roboflow:
+  workspace: ttocr
+  project: ttocr
+  version: 3
+  license: MIT
+  url: https://universe.roboflow.com/ttocr/ttocr/dataset/3
