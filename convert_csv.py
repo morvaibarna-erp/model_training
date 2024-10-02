@@ -4,6 +4,8 @@ import pandas as pd
 input_excel_file = './values.xlsx'
 output_txt_file = './values.txt'
 
+
+
 # Columns to extract (by name or index)
 columns_to_extract = ['Fáljnév                                                  ', 'Mérőállás']  # Ensure these are the correct column names without extra spaces
 
@@ -19,6 +21,8 @@ with pd.ExcelFile(input_excel_file) as xls:
 
         # Remove any whitespace from the 'Mérőállás' column
         extracted_data['Mérőállás'] = extracted_data['Mérőállás'].str.replace(r'\s+', '', regex=True)
+
+        extracted_data['Fáljnév                                                  '] = extracted_data['Fáljnév                                                  ']+'.jpg'
 
         # Append the extracted data to the TXT file without header
         extracted_data.to_csv(output_txt_file, sep='\t', mode='a', index=False, header=False)

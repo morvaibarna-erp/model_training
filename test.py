@@ -5,17 +5,18 @@ import tensorflow as tf
 import argparse
 import os.path
 import sys
-import supervision as sv
 
 
-images_dir='./yolo_annotate/megfelelt/'
-out_dir ='./yolo_annotate/output2/'
-model_path ='./yolo_annotate/model/two_label_v3_saved_model/two_label_v3_float16.tflite'
-ocr_model = './yolo_annotate/model/recognition.tflite'
-ocr_v2_model = './yolo_annotate/model/recognition_v2.tflite'
+images_dir='./megfelelt/'
+out_dir ='./output2/'
+model_path ='./model/two_label_v3_saved_model/two_label_v3_float16.tflite'
+ocr_model = './model/recognition.tflite'
+ocr_v2_model = './model/recognition_v2.tflite'
 
 correct_allas = 0
 incorrect_allas = 0
+segment = 0
+digit = 0
 lines = []
 
 def prepare_input(image_path):
@@ -118,6 +119,8 @@ def run_inference_on_image(filename):
     image_path = images_dir + filename
     out_path = out_dir + filename
     image = cv2.imread(image_path)
+    global segment
+    global digit
     if image is None:
         print(f"Could not load image at {image_path}")
         return
@@ -133,11 +136,13 @@ def run_inference_on_image(filename):
     if results[0][5][max_cnf_infex_segment] > results[0][4][max_cnf_infex_digit]:
         max_cnf_infex = np.argmax(results[0][5])
         class_id = 1
-        print('segment')
+        segment = segment+1
+        # print('Hétszegmenses mérő')
     else:
         max_cnf_infex = np.argmax(results[0][4])
         class_id = 0
-        print('digit')
+        digit = digit+1
+        # print('Tárcsás mérő')
 
     # for data in range(len(results[0])):
     #     print((results[0][data][max_cnf_infex]))
@@ -219,7 +224,20 @@ def check_ocr_model(filename, lines, ocr_model):
                 correct_allas = correct_allas + 1
             else:
                 global incorrect_allas
+                print('Nem talált: ' + filename + ' | ' + 'ocr: ' + text + ', eredeti: ' + allas)
                 incorrect_allas = incorrect_allas + 1
+
+
+
+def trim_leading_zeros_and_suffix(input_string):
+    # Remove leading zeros
+    trimmed_string = input_string.lstrip('0')
+    
+    # Split at the period and take the part before it
+    if '.' in trimmed_string:
+        trimmed_string = trimmed_string.split('.')[0]
+    
+    return trimmed_string
 
 def main():
     label_path = os.path.join(out_dir + 'gt.txt')
@@ -228,14 +246,20 @@ def main():
     global incorrect_allas
     with open(label_path, 'r') as f:
         lines = f.readlines()
-    for filename in os.listdir(out_dir):
+    for filename in os.listdir(images_dir):
         if filename.endswith(('.JPG')) or filename.endswith(('.png')):
             # print('Run labeling on: ', filename)
             run_inference_on_image(filename)
-            # check_ocr_model(filename, lines, ocr_v2_model)
             # run_ocr(filename)
-    
-    # print(correct_allas/(correct_allas+incorrect_allas)*100, "%")
+
+    for filename in os.listdir(out_dir):
+        if filename.endswith(('.JPG')) or filename.endswith(('.png')):
+            check_ocr_model(filename, lines, ocr_v2_model)
+    sum_of_device = segment+digit
+    print('Összes felismert mérő:', sum_of_device)
+    print('Hétszegmenses mérők száma:', segment)
+    print('Tárcsás mérők száma:', digit)
+    print(round(correct_allas/(correct_allas+incorrect_allas)*100,2), "%-ban egyezik az OCR eredménye és a valós mérőállás (hétszegmenses kizárólag)")
 
 if __name__=="__main__":
     main()
