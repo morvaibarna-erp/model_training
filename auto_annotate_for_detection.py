@@ -1,19 +1,32 @@
 import cv2
 from ultralytics import YOLO
 import os
+import shutil
 
 output_dir = './annotated/'
-images_dir = './megfelelt/'
+images_dir = './merok_kivalogatott/'
 images_out_dir = './dataset/train/images/'
 labels_dir = './dataset/train/labels/'
 not_detected_images_dir = "./not_det/"
 
-model = YOLO("./model/two_label_v3.pt")
+model = YOLO("./model/modelv6.pt")
 
 not_detected_images = 0
 detected_images = 0
 
 classes = {0: 'digit', 1: 'segment'}
+
+def delete_folder_content(folder_path):
+    for filename in os.listdir(folder_path):
+        file_path = os.path.join(folder_path, filename)
+        try:
+            # Check if it's a file or directory
+            if os.path.isfile(file_path) or os.path.islink(file_path):
+                os.unlink(file_path)  # Remove the file or link
+            elif os.path.isdir(file_path):
+                shutil.rmtree(file_path)  # Remove the directory and all its contents
+        except Exception as e:
+            print(f'Failed to delete {file_path}. Reason: {e}')
 
 def draw_bounding_box(image_path, xywh, output_path, class_id):
     # Load the image
@@ -60,8 +73,8 @@ def run_inference_on_image(filename):
         if r.boxes:
             class_id = int(r.boxes.cls[0])
             draw_bounding_box(image_path, r.boxes.xywh[0], output_dir + filename, class_id)
-            write_yolo_label(image_path, class_id, r.boxes.xywh[0], labels_dir)
-            copy_image(image_path, images_out_dir+filename)
+            # write_yolo_label(image_path, class_id, r.boxes.xywh[0], labels_dir)
+            # copy_image(image_path, images_out_dir+filename)
             global detected_images 
             detected_images = detected_images + 1
         else:
@@ -111,10 +124,16 @@ def copy_image(image_path, images_out_dir):
         image = cv2.imread(image_path)
         cv2.imwrite(images_out_dir, image)
 
+delete_folder_content(output_dir)
+delete_folder_content(not_detected_images_dir)
+
+sumimg = 0
 for filename in os.listdir(images_dir):
-    if filename.endswith((['.JPG', '.jpg', '.png'])):
+    if filename.endswith(('.JPG')):       
+        sumimg = sumimg+1
         print('Run labeling on: ', filename)
         run_inference_on_image(filename)
-print(detected_images/50 * 100, "%")
-print(not_detected_images)
+print(detected_images/sumimg * 100, "%")
+print(sumimg)
 print(detected_images)
+print(not_detected_images)

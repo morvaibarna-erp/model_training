@@ -205,7 +205,7 @@ def main():
         if filename.endswith(('.JPG')):
             run_inference_on_image(filename)
     ocr_dir = os.listdir(out_dir)
-    ocr_dir = sorted(ocr_dir, key=extract_number)
+    # ocr_dir = sorted(ocr_dir, key=extract_number)
     for filename in ocr_dir:
         if filename.endswith(('.JPG')):
             run_ocr(filename)

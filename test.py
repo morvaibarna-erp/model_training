@@ -7,9 +7,9 @@ import os.path
 import sys
 
 
-images_dir='./megfelelt/'
+images_dir='./merok_kivalogatott/'
 out_dir ='./output2/'
-model_path ='./model/two_label_v3_saved_model/two_label_v3_float16.tflite'
+model_path ='./model/modelv6_saved_model/modelv6_float16.tflite'
 ocr_model = './model/recognition.tflite'
 ocr_v2_model = './model/recognition_v2.tflite'
 
@@ -128,40 +128,40 @@ def run_inference_on_image(filename):
     img_h, img_w, c = image.shape
     results = predict(image_path, model_path)
 
-    max_cnf_infex_segment = np.argmax(results[0][5])
-    max_cnf_infex_digit = np.argmax(results[0][4])
-    max_cnf_infex = 0
-    class_id = 0
+    max_cnf_index_segment = np.argmax(results[0][5])
+    max_cnf_index_digit = np.argmax(results[0][4])
+    max_cnf_index = -1
+    class_id = -1
 
-    if results[0][5][max_cnf_infex_segment] > results[0][4][max_cnf_infex_digit]:
-        max_cnf_infex = np.argmax(results[0][5])
+    if results[0][5][max_cnf_index_segment] > results[0][4][max_cnf_index_digit]:
+        max_cnf_index = np.argmax(results[0][5])
         class_id = 1
         segment = segment+1
         # print('Hétszegmenses mérő')
     else:
-        max_cnf_infex = np.argmax(results[0][4])
+        max_cnf_index = np.argmax(results[0][4])
         class_id = 0
         digit = digit+1
         # print('Tárcsás mérő')
 
     # for data in range(len(results[0])):
-    #     print((results[0][data][max_cnf_infex]))
+    #     print((results[0][data][max_cnf_index]))
 
-    box_color = (255,0,0) if class_id == 0 else (0, 255, 0)  # Blue for 'digit', Green for 'segment'
-    box_thickness = 2
-    x = results[0][0][max_cnf_infex]
-    y =results[0][1][max_cnf_infex]
-    w = results[0][2][max_cnf_infex]
-    h = results[0][3][max_cnf_infex]
+    # box_color = (255,0,0) if class_id == 0 else (0, 255, 0)  # Blue for 'digit', Green for 'segment'
+    # box_thickness = 2
+    x = results[0][0][max_cnf_index]
+    y =results[0][1][max_cnf_index]
+    w = results[0][2][max_cnf_index]
+    h = results[0][3][max_cnf_index]
 
     box = yolobbox2bbox(x, y, w, h, img_w, img_h)
     
-    cv2.rectangle(image, (int(box[0]), int(box[1])), (int(box[2]), int(box[3])), box_color, box_thickness)
-    if class_id == 1:   
-        cropped_image = image[int(box[1]):int(box[3]), int(box[0]):int(box[2])]
+    # cv2.rectangle(image, (int(box[0]), int(box[1])), (int(box[2]), int(box[3])), box_color, box_thickness)
+    if class_id == 1 and results[0][5][max_cnf_index_segment]>0.5:
+        cropped_image = image[abs(int(box[1])):abs(int(box[3])), abs(int(box[0])):abs(int(box[2]))]
         cv2.imwrite(out_path, cropped_image)
 
-alphabet = string.digits + '.'
+alphabet = string.digits + ''
 blank_index = len(alphabet)
 
 def prepare_input_for_ocr(image_path):
@@ -213,7 +213,9 @@ def check_ocr_model(filename, lines, ocr_model):
     image_path = out_dir + filename
     result = predict_for_ocr(image_path, ocr_model)
     text = "".join(alphabet[index] for index in result[0] if index not in [blank_index, -1])
-    
+    text = trim_leading_zeros_and_suffix(text)
+    if text == "":
+        text = '0'
     for line in lines:
         line = line[:-1]
         img_name = line.split("\t")[0]
@@ -226,7 +228,6 @@ def check_ocr_model(filename, lines, ocr_model):
                 global incorrect_allas
                 print('Nem talált: ' + filename + ' | ' + 'ocr: ' + text + ', eredeti: ' + allas)
                 incorrect_allas = incorrect_allas + 1
-
 
 
 def trim_leading_zeros_and_suffix(input_string):
@@ -247,14 +248,17 @@ def main():
     with open(label_path, 'r') as f:
         lines = f.readlines()
     for filename in os.listdir(images_dir):
-        if filename.endswith(('.JPG')) or filename.endswith(('.png')):
+        if filename.endswith(('.JPG')):
             # print('Run labeling on: ', filename)
             run_inference_on_image(filename)
+            print("Fut a detektálás")
             # run_ocr(filename)
 
     for filename in os.listdir(out_dir):
         if filename.endswith(('.JPG')) or filename.endswith(('.png')):
             check_ocr_model(filename, lines, ocr_v2_model)
+            print("Fut az OCR")
+            
     sum_of_device = segment+digit
     print('Összes felismert mérő:', sum_of_device)
     print('Hétszegmenses mérők száma:', segment)
