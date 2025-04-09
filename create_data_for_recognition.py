@@ -12,7 +12,7 @@ images_dir='./megfelelt/'
 out_dir ='./output2/'
 model_path ='./model/two_label_v3_saved_model/two_label_v3_float16.tflite'
 ocr_model = './model/recognition.tflite'
-ocr_v2_model = './model/recognition_v2.tflite'
+ocr_v2_model = './model/recognition_v6.tflite'
 
 alphabet = string.digits + '.'
 blank_index = len(alphabet)

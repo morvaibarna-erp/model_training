@@ -7,11 +7,11 @@ import os.path
 import sys
 
 
-images_dir='./merok_kivalogatott/'
-out_dir ='./output2/'
+images_dir='./240_merok/'
+out_dir ='./output/'
 model_path ='./model/modelv6_saved_model/modelv6_float16.tflite'
 ocr_model = './model/recognition.tflite'
-ocr_v2_model = './model/recognition_v2.tflite'
+ocr_v2_model = './model/recognition_v7.tflite'
 
 correct_allas = 0
 incorrect_allas = 0
@@ -136,7 +136,7 @@ def run_inference_on_image(filename):
     if results[0][5][max_cnf_index_segment] > results[0][4][max_cnf_index_digit]:
         max_cnf_index = np.argmax(results[0][5])
         class_id = 1
-        segment = segment+1
+        
         # print('Hétszegmenses mérő')
     else:
         max_cnf_index = np.argmax(results[0][4])
@@ -158,10 +158,11 @@ def run_inference_on_image(filename):
     
     # cv2.rectangle(image, (int(box[0]), int(box[1])), (int(box[2]), int(box[3])), box_color, box_thickness)
     if class_id == 1 and results[0][5][max_cnf_index_segment]>0.5:
+        segment = segment+1
         cropped_image = image[abs(int(box[1])):abs(int(box[3])), abs(int(box[0])):abs(int(box[2]))]
         cv2.imwrite(out_path, cropped_image)
 
-alphabet = string.digits + ''
+alphabet = string.digits
 blank_index = len(alphabet)
 
 def prepare_input_for_ocr(image_path):
@@ -241,7 +242,7 @@ def trim_leading_zeros_and_suffix(input_string):
     return trimmed_string
 
 def main():
-    label_path = os.path.join(out_dir + 'gt.txt')
+    label_path = os.path.join(out_dir + 'gt_aa.txt')
     global lines
     global correct_allas
     global incorrect_allas
@@ -255,10 +256,10 @@ def main():
             # run_ocr(filename)
 
     for filename in os.listdir(out_dir):
-        if filename.endswith(('.JPG')) or filename.endswith(('.png')):
+        if filename.endswith(('.JPG')) or filename.endswith(('.png')) or filename.endswith(('.jpeg')):
             check_ocr_model(filename, lines, ocr_v2_model)
-            print("Fut az OCR")
-            
+            # print("Fut az OCR")
+
     sum_of_device = segment+digit
     print('Összes felismert mérő:', sum_of_device)
     print('Hétszegmenses mérők száma:', segment)
